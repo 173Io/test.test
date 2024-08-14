@@ -6,7 +6,6 @@
     <title>AR.js Ground Recognition</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/mayognaise/aframe-gesture-detector-component/dist/aframe-gesture-detector.min.js"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
     <a-scene vr-mode-ui="enabled: false;" embedded arjs="sourceType: webcam; debugUIEnabled: false;">
@@ -15,8 +14,7 @@
                   gltf-model="url(cube.glb)" 
                   scale="0.1 0.1 0.1" 
                   position="0 0 -2" 
-                  rotation="45 45 0"
-                  gesture-detector>
+                  rotation="45 45 0">
         </a-entity>
         <a-entity camera></a-entity>
     </a-scene>
@@ -24,29 +22,55 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const model = document.getElementById('arModel');
-            let initialPosition = model.getAttribute('position'); // 初期位置を記憶
+            let initialPosition = model.getAttribute('position');
+            let initialScale = model.getAttribute('scale');
+            let isDragging = false;
+            let lastTouchX, lastTouchY;
 
-            // ドラッグとピンチ操作
-            model.addEventListener('gesture-swipe', function(event) {
-                let position = model.getAttribute('position');
-                position.x += event.detail.direction === 'right' ? 0.1 : -0.1;
-                position.z += event.detail.direction === 'up' ? -0.1 : 0.1;
-                model.setAttribute('position', position);
+            model.addEventListener('touchstart', function(event) {
+                if (event.touches.length === 1) {
+                    // ドラッグ開始
+                    isDragging = true;
+                    lastTouchX = event.touches[0].clientX;
+                    lastTouchY = event.touches[0].clientY;
+                }
             });
 
-            model.addEventListener('gesture-pinch', function(event) {
-                let scale = model.getAttribute('scale');
-                scale.x *= event.detail.scale;
-                scale.y *= event.detail.scale;
-                scale.z *= event.detail.scale;
-                model.setAttribute('scale', scale);
+            model.addEventListener('touchmove', function(event) {
+                if (isDragging && event.touches.length === 1) {
+                    // ドラッグ中
+                    let deltaX = event.touches[0].clientX - lastTouchX;
+                    let deltaY = event.touches[0].clientY - lastTouchY;
+                    let position = model.getAttribute('position');
+                    position.x += deltaX * 0.005;  // ドラッグの敏感さを調整
+                    position.y -= deltaY * 0.005;
+                    model.setAttribute('position', position);
+                    lastTouchX = event.touches[0].clientX;
+                    lastTouchY = event.touches[0].clientY;
+                } else if (event.touches.length === 2) {
+                    // ピンチ操作
+                    isDragging = false;
+                    let touch1 = event.touches[0];
+                    let touch2 = event.touches[1];
+                    let currentDistance = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+                    let initialDistance = Math.hypot(initialPosition.x - initialPosition.y, initialPosition.x - initialPosition.y);
+
+                    let scale = model.getAttribute('scale');
+                    let scaleFactor = currentDistance / initialDistance;
+
+                    scale.x = initialScale.x * scaleFactor;
+                    scale.y = initialScale.y * scaleFactor;
+                    scale.z = initialScale.z * scaleFactor;
+
+                    model.setAttribute('scale', scale);
+                }
             });
 
-            // 単純なクリックでの回転処理（長押しは未実装）
-            document.addEventListener('click', function() {
-                let rotation = model.getAttribute('rotation');
-                rotation.y += 15; // 15度回転
-                model.setAttribute('rotation', rotation);
+            model.addEventListener('touchend', function(event) {
+                if (event.touches.length === 0) {
+                    // ドラッグ終了
+                    isDragging = false;
+                }
             });
         });
     </script>
