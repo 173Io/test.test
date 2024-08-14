@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR.js Ground Recognition</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mayognaise/aframe-gesture-detector-component/dist/aframe-gesture-detector.min.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+    <a-scene vr-mode-ui="enabled: false;" embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        <!-- 3Dモデル -->
+        <a-entity id="arModel" 
+                  gltf-model="url(cube.glb)" 
+                  scale="0.1 0.1 0.1" 
+                  position="0 0 -2" 
+                  rotation="45 45 0"
+                  gesture-detector>
+        </a-entity>
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const model = document.getElementById('arModel');
+            let initialPosition = model.getAttribute('position'); // 初期位置を記憶
+
+            // ドラッグとピンチ操作
+            model.addEventListener('gesture-swipe', function(event) {
+                let position = model.getAttribute('position');
+                position.x += event.detail.direction === 'right' ? 0.1 : -0.1;
+                position.z += event.detail.direction === 'up' ? -0.1 : 0.1;
+                model.setAttribute('position', position);
+            });
+
+            model.addEventListener('gesture-pinch', function(event) {
+                let scale = model.getAttribute('scale');
+                scale.x *= event.detail.scale;
+                scale.y *= event.detail.scale;
+                scale.z *= event.detail.scale;
+                model.setAttribute('scale', scale);
+            });
+
+            // 単純なクリックでの回転処理（長押しは未実装）
+            document.addEventListener('click', function() {
+                let rotation = model.getAttribute('rotation');
+                rotation.y += 15; // 15度回転
+                model.setAttribute('rotation', rotation);
+            });
+        });
+    </script>
+</body>
+</html>
